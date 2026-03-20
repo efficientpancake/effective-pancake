@@ -4,6 +4,36 @@ let responses = ["", "", "", "", "", ""];
 // Stores follow-up conversation history per expert
 let chatHistories = [[], [], [], [], [], []];
 
+// ─── Markdown rendering ───────────────────────────────────────────────────────
+
+function parseInlineMd(text) {
+  return text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdown(text) {
+  var container = document.createDocumentFragment();
+  text.split(/\r?\n/).forEach(function(rawLine) {
+    var line = rawLine.trimEnd();
+    var el;
+    var h3 = line.match(/^###\s+(.+)/);
+    var h2 = line.match(/^##\s+(.+)/);
+    var h1 = line.match(/^#\s+(.+)/);
+    if (h3) { el = document.createElement("h3"); el.className = "md-h3"; el.innerHTML = parseInlineMd(h3[1]); }
+    else if (h2) { el = document.createElement("h2"); el.className = "md-h2"; el.innerHTML = parseInlineMd(h2[1]); }
+    else if (h1) { el = document.createElement("h1"); el.className = "md-h1"; el.innerHTML = parseInlineMd(h1[1]); }
+    else if (line.trim() === "---" || line.trim() === "***") { el = document.createElement("hr"); el.className = "md-hr"; }
+    else if (/^[\s]*[-*+] /.test(line)) { el = document.createElement("li"); el.className = "md-li"; el.innerHTML = parseInlineMd(line.replace(/^[\s]*[-*+] /, "")); }
+    else if (/^\d+\. /.test(line)) { el = document.createElement("li"); el.className = "md-li md-oli"; el.innerHTML = parseInlineMd(line.replace(/^\d+\. /, "")); }
+    else if (line.trim() === "") { el = document.createElement("div"); el.className = "md-spacer"; }
+    else { el = document.createElement("p"); el.className = "md-p"; el.innerHTML = parseInlineMd(line); }
+    container.appendChild(el);
+  });
+  return container;
+}
+
 // ─── Show / hide panels ───────────────────────────────────────────────────────
 
 function showAgent(index) {
@@ -112,10 +142,9 @@ function showResponse(index, text) {
   area.className = "response-area visible";
   area.innerHTML = "";
 
-  const p = document.createElement("p");
-  p.style.whiteSpace = "pre-wrap";
-  p.textContent = text;
-  area.appendChild(p);
+  const mdDiv = document.createElement("div");
+  mdDiv.appendChild(renderMarkdown(text));
+  area.appendChild(mdDiv);
 
   const btn = document.createElement("button");
   btn.className = "copy-response-btn";
@@ -482,6 +511,189 @@ function showToast(message) {
   toast.textContent = message || "Copied!";
   toast.classList.add("show");
   setTimeout(function () { toast.classList.remove("show"); }, 2000);
+}
+
+// ─── Vote feature ─────────────────────────────────────────────────────────────
+
+var ADVISOR_META = {
+  PSYCHOLOGIST:         { name: "Psychologist",       icon: "🧠" },
+  POLITICAL_STRATEGIST: { name: "Political Strategist", icon: "♟️" },
+  NEGOTIATION_EXPERT:   { name: "Negotiation Expert",  icon: "🤝" },
+  CONTRARIAN:           { name: "Contrarian",          icon: "😈" },
+  MENTOR:               { name: "Mentor",              icon: "🧭" },
+};
+
+function buildVoteQuestionsPrompt() {
+  var conflict = document.getElementById("conflictDescription").value || "not specified";
+  var summaries = [
+    responses[0] ? "Psychologist: " + responses[0].slice(0, 250) : "",
+    responses[1] ? "Political Strategist: " + responses[1].slice(0, 250) : "",
+    responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 250) : "",
+    responses[3] ? "Contrarian: " + responses[3].slice(0, 250) : "",
+    responses[4] ? "Mentor: " + responses[4].slice(0, 250) : "",
+    responses[5] ? "Boardroom synthesis: " + responses[5].slice(0, 250) : "",
+  ].filter(Boolean).join("\n\n");
+
+  return "You are the Mentor — chair of this advisory session. Distill the core decision into 3-5 yes/no questions for the full panel to vote on.\n\nConflict:\n\"" + conflict + "\"\n\n" + (summaries ? "Advisor perspectives:\n" + summaries + "\n\n" : "") + "Rules:\n- The FIRST question must always be the fundamental binary: take action vs. do not act.\n- Subsequent questions address what kind of action, if any.\n- Keep each question short and directly answerable with yes or no.\n- No personal details about the user.\n\nOutput ONLY this format, one per line:\nQUESTION: [question text]";
+}
+
+function buildVotingPrompt(question) {
+  var conflict = document.getElementById("conflictDescription").value || "not specified";
+  var ctx = [
+    responses[0] ? "Psychologist: " + responses[0].slice(0, 150) : "",
+    responses[1] ? "Political Strategist: " + responses[1].slice(0, 150) : "",
+    responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 150) : "",
+    responses[3] ? "Contrarian: " + responses[3].slice(0, 150) : "",
+    responses[4] ? "Mentor: " + responses[4].slice(0, 150) : "",
+  ].filter(Boolean).join("\n");
+
+  return "Simulate a vote among five advisors on this question. Each votes YES or NO and gives exactly one sentence explaining their reasoning — staying in character.\n\nQuestion: \"" + question + "\"\n\nConflict: \"" + conflict + "\"\n\n" + ctx + "\n\nOutput ONLY in this exact format, one line per advisor:\nPSYCHOLOGIST|YES|One sentence reason.\nPOLITICAL_STRATEGIST|YES|One sentence reason.\nNEGOTIATION_EXPERT|NO|One sentence reason.\nCONTRARIAN|NO|One sentence reason.\nMENTOR|YES|One sentence reason.";
+}
+
+function parseVoteQuestions(text) {
+  return text.split("\n")
+    .map(function(line) { return line.trim(); })
+    .filter(function(line) { return line.toUpperCase().startsWith("QUESTION:"); })
+    .map(function(line) { return line.replace(/^QUESTION:\s*/i, "").trim(); });
+}
+
+function parseVotes(text) {
+  var votes = [];
+  text.split("\n").forEach(function(line) {
+    var parts = line.trim().split("|");
+    if (parts.length >= 3) {
+      var key = parts[0].trim().toUpperCase().replace(/\s+/g, "_");
+      var voteVal = parts[1].trim().toUpperCase();
+      var reason = parts.slice(2).join("|").trim();
+      var meta = ADVISOR_META[key];
+      if (meta && (voteVal === "YES" || voteVal === "NO")) {
+        votes.push({ name: meta.name, icon: meta.icon, vote: voteVal, reason: reason });
+      }
+    }
+  });
+  return votes;
+}
+
+function displayVoteResults(questions) {
+  var container = document.getElementById("vote-results");
+  container.innerHTML = "";
+
+  questions.forEach(function(qData, qIndex) {
+    var yesCount = qData.votes.filter(function(v) { return v.vote === "YES"; }).length;
+    var noCount  = qData.votes.filter(function(v) { return v.vote === "NO"; }).length;
+    var total = qData.votes.length || 1;
+    var yesPct = Math.round((yesCount / total) * 100);
+
+    var badgeClass, badgeText;
+    if (qIndex === 0) {
+      if (yesCount > noCount)      { badgeClass = "action";    badgeText = "Take action — " + yesCount + " YES · " + noCount + " NO"; }
+      else if (noCount > yesCount) { badgeClass = "no-action"; badgeText = "Do not act — " + noCount + " NO · " + yesCount + " YES"; }
+      else                         { badgeClass = "split";     badgeText = "Split decision — " + yesCount + " YES · " + noCount + " NO"; }
+    } else {
+      if (yesCount > noCount)      { badgeClass = "action";    badgeText = yesCount + " YES · " + noCount + " NO"; }
+      else if (noCount > yesCount) { badgeClass = "no-action"; badgeText = noCount + " NO · " + yesCount + " YES"; }
+      else                         { badgeClass = "split";     badgeText = "Split — " + yesCount + " YES · " + noCount + " NO"; }
+    }
+
+    var card = document.createElement("div");
+    card.className = "vote-question-card";
+
+    var qText = document.createElement("div");
+    qText.className = "vote-question-text";
+    qText.textContent = qData.question;
+    card.appendChild(qText);
+
+    var badge = document.createElement("div");
+    badge.className = "vote-decision-badge " + badgeClass;
+    badge.textContent = badgeText;
+    card.appendChild(badge);
+
+    var rows = document.createElement("div");
+    rows.className = "vote-rows";
+    qData.votes.forEach(function(v) {
+      var row = document.createElement("div");
+      row.className = "vote-row";
+
+      var advisorDiv = document.createElement("div");
+      advisorDiv.className = "vote-advisor";
+      advisorDiv.innerHTML = "<span class='vote-icon'>" + v.icon + "</span><span class='vote-name'>" + v.name + "</span>";
+
+      var voteBadge = document.createElement("span");
+      voteBadge.className = "vote-badge " + v.vote.toLowerCase();
+      voteBadge.textContent = v.vote;
+
+      var reason = document.createElement("span");
+      reason.className = "vote-reason";
+      reason.textContent = v.reason;
+
+      row.appendChild(advisorDiv);
+      row.appendChild(voteBadge);
+      row.appendChild(reason);
+      rows.appendChild(row);
+    });
+    card.appendChild(rows);
+
+    var tally = document.createElement("div");
+    tally.className = "vote-tally";
+    tally.innerHTML = "<div class='vote-tally-bar'><div class='vote-tally-fill' style='width:" + yesPct + "%'></div></div><div class='vote-tally-counts'>" + yesCount + " YES · " + noCount + " NO</div>";
+    card.appendChild(tally);
+
+    container.appendChild(card);
+  });
+}
+
+async function generateVote() {
+  var conflict = document.getElementById("conflictDescription").value.trim();
+  if (!conflict) { alert("Please describe your conflict situation first."); return; }
+
+  var hasResponse = responses.some(function(r) { return r; });
+  if (!hasResponse) { alert("Get advice from at least one advisor before convening the vote."); return; }
+
+  var btn = document.querySelector("#agent-6 .generate-btn");
+  var statusDiv = document.getElementById("vote-status");
+  var resultsDiv = document.getElementById("vote-results");
+
+  btn.disabled = true;
+  btn.textContent = "Convening...";
+  statusDiv.className = "vote-status visible";
+  statusDiv.textContent = "The Mentor is framing the key questions...";
+  resultsDiv.innerHTML = "";
+
+  try {
+    // Step 1: Generate questions
+    var qJobId = "job-" + Date.now() + "-vq";
+    await fetch("/.netlify/functions/claude-background", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: buildVoteQuestionsPrompt(), jobId: qJobId, agentIndex: 6 })
+    });
+    var questionsText = await pollForResult(qJobId, statusDiv);
+    var questions = parseVoteQuestions(questionsText);
+    if (!questions.length) throw new Error("Could not generate questions — please try again.");
+
+    // Step 2: Vote on each question
+    var voteResults = [];
+    for (var i = 0; i < questions.length; i++) {
+      statusDiv.textContent = "Advisors voting on question " + (i + 1) + " of " + questions.length + "...";
+      var vJobId = "job-" + Date.now() + "-vv" + i;
+      await fetch("/.netlify/functions/claude-background", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: buildVotingPrompt(questions[i]), jobId: vJobId, agentIndex: 6 })
+      });
+      var votesText = await pollForResult(vJobId, statusDiv);
+      voteResults.push({ question: questions[i], votes: parseVotes(votesText) });
+    }
+
+    statusDiv.className = "vote-status";
+    displayVoteResults(voteResults);
+
+  } catch (err) {
+    statusDiv.textContent = "Error: " + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Re-convene the Vote →";
 }
 
 // ─── Start ────────────────────────────────────────────────────────────────────

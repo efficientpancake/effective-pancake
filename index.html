@@ -45,6 +45,10 @@
           <span class="nav-icon">🏛️</span>
           <span>The Boardroom</span>
         </button>
+        <button class="nav-btn vote-btn" onclick="showAgent(6)">
+          <span class="nav-icon">🗳️</span>
+          <span>The Vote</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -297,6 +301,29 @@
 
           <div class="nav-arrows">
             <button class="back-btn" onclick="showAgent(4)">← Mentor</button>
+            <button class="next-btn" onclick="showAgent(6)">The Vote →</button>
+          </div>
+        </div>
+
+        <!-- 6: The Vote -->
+        <div class="agent-panel" id="agent-6">
+          <div class="agent-header">
+            <div class="agent-icon">🗳️</div>
+            <div>
+              <div class="agent-name">The Vote</div>
+              <div class="agent-role">The Mentor chairs — all five advisors cast their verdict</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            The Mentor frames the key decision as a series of yes/no questions — starting with the fundamental choice: act or hold back. All five advisors vote and give their reason. The result is a clear, visualised verdict.
+          </div>
+
+          <button class="generate-btn" onclick="generateVote()">Convene the Vote →</button>
+          <div class="vote-status" id="vote-status"></div>
+          <div class="vote-results" id="vote-results"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(5)">← The Boardroom</button>
             <div></div>
           </div>
         </div>
