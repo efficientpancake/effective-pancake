@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conflict Advisor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">⚖️</div>
+        <div>
+          <div class="sidebar-title">Conflict</div>
+          <div class="sidebar-sub">Advisor</div>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav-btn active" onclick="showAgent(0)">
+          <span class="nav-icon">🧠</span>
+          <span>Psychologist</span>
+        </button>
+        <button class="nav-btn" onclick="showAgent(1)">
+          <span class="nav-icon">♟️</span>
+          <span>Political Strategist</span>
+        </button>
+        <button class="nav-btn" onclick="showAgent(2)">
+          <span class="nav-icon">🤝</span>
+          <span>Negotiation Expert</span>
+        </button>
+        <button class="nav-btn" onclick="showAgent(3)">
+          <span class="nav-icon">😈</span>
+          <span>Contrarian</span>
+        </button>
+        <button class="nav-btn" onclick="showAgent(4)">
+          <span class="nav-icon">🧭</span>
+          <span>Mentor</span>
+        </button>
+        <button class="nav-btn boardroom-btn" onclick="showAgent(5)">
+          <span class="nav-icon">🏛️</span>
+          <span>The Boardroom</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="export-btn" onclick="exportAllPDF()">Export all as PDF</button>
+        <button class="clear-btn" onclick="clearAll()">Clear all</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+
+      <!-- Conflict description -->
+      <div class="idea-bar">
+        <label for="conflictDescription">Describe your conflict</label>
+        <textarea id="conflictDescription" rows="3" placeholder="Describe the conflict in as much detail as you're comfortable sharing. The more context you give, the better the advice..." oninput="save()"></textarea>
+      </div>
+
+      <!-- Panels -->
+      <div class="agents">
+
+        <!-- 0: Psychologist -->
+        <div class="agent-panel active" id="agent-0">
+          <div class="agent-header">
+            <div class="agent-icon">🧠</div>
+            <div>
+              <div class="agent-name">Psychologist</div>
+              <div class="agent-role">Status dynamics, ego, and emotional intelligence</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            This advisor analyses the psychological forces driving the conflict — status needs, ego triggers, unconscious patterns — and finds the emotionally intelligent path forward.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>What is your relationship history with this person? How long have you known them and what has the dynamic been like?</label>
+              <textarea id="q0-0" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What emotions are you experiencing in this conflict? Be honest.</label>
+              <textarea id="q0-1" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What do you think the other person is feeling or thinking about you?</label>
+              <textarea id="q0-2" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What outcome would make you feel respected, regardless of any practical result?</label>
+              <textarea id="q0-3" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(0)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(0)">Get advice →</button>
+          <div class="response-area" id="response-0"></div>
+
+          <div class="nav-arrows">
+            <div></div>
+            <button class="next-btn" onclick="showAgent(1)">Next: Political Strategist →</button>
+          </div>
+        </div>
+
+        <!-- 1: Political Strategist -->
+        <div class="agent-panel" id="agent-1">
+          <div class="agent-header">
+            <div class="agent-icon">♟️</div>
+            <div>
+              <div class="agent-name">Political Strategist</div>
+              <div class="agent-role">Power dynamics, leverage, and institutional politics</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            This advisor maps the power landscape — who holds formal and informal power, what leverage exists on both sides, and how to navigate institutional politics without getting crushed.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>Who else is involved or observing this conflict? (Other stakeholders?)</label>
+              <textarea id="q1-0" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What leverage do you have? What does the other person need from you?</label>
+              <textarea id="q1-1" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What is the other person's reputation and standing in the institution?</label>
+              <textarea id="q1-2" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What formal or informal power structures could work in your favour?</label>
+              <textarea id="q1-3" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(1)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(1)">Get advice →</button>
+          <div class="response-area" id="response-1"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(0)">← Psychologist</button>
+            <button class="next-btn" onclick="showAgent(2)">Next: Negotiation Expert →</button>
+          </div>
+        </div>
+
+        <!-- 2: Negotiation Expert -->
+        <div class="agent-panel" id="agent-2">
+          <div class="agent-header">
+            <div class="agent-icon">🤝</div>
+            <div>
+              <div class="agent-name">Negotiation Expert</div>
+              <div class="agent-role">Getting what you want without burning bridges</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            This advisor breaks down the conflict as a negotiation problem — identifying what each party truly wants, where agreement is possible, and how to get your core needs met.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>What do you want from this conflict? List everything — practical outcomes and emotional needs.</label>
+              <textarea id="q2-0" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What are you willing to compromise on? What is non-negotiable?</label>
+              <textarea id="q2-1" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>Have you made any explicit or implicit demands, threats, or ultimatums so far?</label>
+              <textarea id="q2-2" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What would a win-win look like, if one is even possible?</label>
+              <textarea id="q2-3" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(2)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(2)">Get advice →</button>
+          <div class="response-area" id="response-2"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(1)">← Political Strategist</button>
+            <button class="next-btn" onclick="showAgent(3)">Next: Contrarian →</button>
+          </div>
+        </div>
+
+        <!-- 3: Contrarian -->
+        <div class="agent-panel" id="agent-3">
+          <div class="agent-header">
+            <div class="agent-icon">😈</div>
+            <div>
+              <div class="agent-name">Contrarian</div>
+              <div class="agent-role">Challenging your assumptions and blind spots</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            This advisor is not here to validate you. They will challenge your assumptions, expose your blind spots, and ask the questions you least want to answer. It will be uncomfortable — that's the point.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>What is the strongest possible case that you are wrong about this situation?</label>
+              <textarea id="q3-0" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What might you be doing — consciously or unconsciously — to provoke or escalate this conflict?</label>
+              <textarea id="q3-1" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>Is there any part of the other person's position that you secretly think is valid?</label>
+              <textarea id="q3-2" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(3)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(3)">Get advice →</button>
+          <div class="response-area" id="response-3"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(2)">← Negotiation Expert</button>
+            <button class="next-btn" onclick="showAgent(4)">Next: Mentor →</button>
+          </div>
+        </div>
+
+        <!-- 4: Mentor -->
+        <div class="agent-panel" id="agent-4">
+          <div class="agent-header">
+            <div class="agent-icon">🧭</div>
+            <div>
+              <div class="agent-name">Mentor</div>
+              <div class="agent-role">Long-term perspective and the bigger picture</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            This advisor zooms out. They have seen careers built and destroyed by how people handle moments like this one. They will help you see the long game — and whether winning this battle is worth the cost.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>Where do you want to be in 5 years, and how does this person affect that path?</label>
+              <textarea id="q4-0" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>What is the cost of winning this battle? What is the cost of losing?</label>
+              <textarea id="q4-1" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>Who in your network could advise, advocate for, or support you in this situation?</label>
+              <textarea id="q4-2" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+            <div class="question">
+              <label>How do you want to be remembered by this institution when you leave?</label>
+              <textarea id="q4-3" placeholder="Optional: share your thoughts..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(4)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(4)">Get advice →</button>
+          <div class="response-area" id="response-4"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(3)">← Contrarian</button>
+            <button class="next-btn boardroom-next" onclick="showAgent(5)">Enter The Boardroom →</button>
+          </div>
+        </div>
+
+        <!-- 5: The Boardroom -->
+        <div class="agent-panel" id="agent-5">
+          <div class="agent-header">
+            <div class="agent-icon">🏛️</div>
+            <div>
+              <div class="agent-name">The Boardroom</div>
+              <div class="agent-role">All five advisors debate and reach a unified verdict</div>
+            </div>
+          </div>
+          <div class="agent-persona">
+            All five advisors sit down together. They challenge each other's advice, debate where they disagree, and ultimately reach a unified recommendation. Run this after you've heard from at least one advisor.
+          </div>
+
+          <div class="questions">
+            <div class="question">
+              <label>Is there anything you want to add before the advisors convene? Any final context?</label>
+              <textarea id="q5-0" placeholder="Optional: add any final context..." oninput="save()"></textarea>
+            </div>
+          </div>
+
+          <button class="copy-notes-btn" onclick="copyNotes(5)">Copy questions &amp; answers</button>
+          <button class="generate-btn" onclick="generate(5)">Convene the Boardroom →</button>
+          <div class="response-area" id="response-5"></div>
+
+          <div class="nav-arrows">
+            <button class="back-btn" onclick="showAgent(4)">← Mentor</button>
+            <div></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
