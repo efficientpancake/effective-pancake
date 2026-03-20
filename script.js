@@ -4,6 +4,9 @@ let responses = ["", "", "", "", "", ""];
 // Stores follow-up conversation history per expert
 let chatHistories = [[], [], [], [], [], []];
 
+// Cached prompt templates loaded from /prompts/*.md
+let promptTemplates = {};
+
 // ─── Markdown rendering ───────────────────────────────────────────────────────
 
 function parseInlineMd(text) {
@@ -47,9 +50,32 @@ function showAgent(index) {
   document.querySelectorAll(".nav-btn")[index].classList.add("active");
 }
 
+// ─── Load prompt templates from /prompts/*.md ─────────────────────────────────
+
+const PROMPT_FILES = [
+  "psychologist",
+  "political-strategist",
+  "negotiation-expert",
+  "contrarian",
+  "mentor",
+  "boardroom",
+];
+
+async function loadPrompts() {
+  await Promise.all(PROMPT_FILES.map(async function (name, i) {
+    try {
+      const res = await fetch("/prompts/" + name + ".md");
+      if (res.ok) promptTemplates[i] = await res.text();
+    } catch (e) {
+      // Will fall back to empty string — generate() will catch the missing prompt
+    }
+  }));
+}
+
 // ─── Build prompts ────────────────────────────────────────────────────────────
 
 function buildPrompt(index) {
+  const template = promptTemplates[index] || "";
   const conflict = document.getElementById("conflictDescription").value || "not specified";
 
   const notes = [];
@@ -64,66 +90,15 @@ function buildPrompt(index) {
   const contrary = responses[3] ? "\n\nContrarian's advice:\n" + responses[3] : "";
   const mentor   = responses[4] ? "\n\nMentor's advice:\n" + responses[4] : "";
 
-  const prompts = [
-    // 0: Psychologist
-    `You are an expert psychologist specialising in status dynamics, ego, and interpersonal conflict in professional and academic settings.
-
-The conflict situation:
-"${conflict}"${userNotes}
-
-Analyse the psychological dynamics at play. What status needs are being triggered on both sides? What unconscious patterns might be driving this conflict? What is the emotionally intelligent path forward — one that protects their self-respect while keeping them strategically safe? Be direct and honest, even if it's uncomfortable to hear.`,
-
-    // 1: Political Strategist
-    `You are a sharp political strategist who specialises in navigating power dynamics in institutions — universities, corporations, and hierarchies of all kinds.
-
-The conflict situation:
-"${conflict}"${userNotes}
-
-Map the power dynamics. Who holds formal power, and who holds informal power? What leverage does each party have? What are the political risks and opportunities? Give them a clear-eyed strategic playbook — not naive advice about "just talking it out," but real tactics for navigating institutional power while protecting their interests.`,
-
-    // 2: Negotiation Expert
-    `You are a world-class negotiation expert trained in both Harvard negotiation principles and real-world high-stakes deal-making.
-
-The conflict situation:
-"${conflict}"${userNotes}
-
-Break down this conflict as a negotiation problem. What does each party actually want vs. what they say they want? Where are the zones of possible agreement? What concessions could be made without sacrificing core interests? Design a negotiation approach that maximises their chances of a good outcome without escalating the conflict.`,
-
-    // 3: Contrarian
-    `You are a sharp, intellectually honest contrarian. Your job is NOT to be supportive — it is to challenge assumptions, expose blind spots, and ask the questions nobody else will ask. You are not cruel, but you are unflinchingly honest.
-
-The conflict situation:
-"${conflict}"${userNotes}
-
-Challenge them. What if they are wrong about this situation? What might they be doing to provoke or escalate this conflict without realising it? What would someone who completely disagrees with their framing say? Be rigorous, not unkind — your goal is to help them see what they cannot see themselves.`,
-
-    // 4: Mentor
-    `You are a wise, experienced mentor who has navigated many professional and institutional environments. You have seen careers flourish and derail, and you understand the long game.
-
-The conflict situation:
-"${conflict}"${userNotes}
-
-Give them long-term perspective. What is the cost of winning this battle versus losing the war? How does this conflict look from the vantage point of five years from now? What would they regret? What is the wisest, most strategic path — not just for right now, but for who they want to become?`,
-
-    // 5: The Boardroom
-    `You are facilitating a high-stakes boardroom session. Five expert advisors have each independently counselled the same person on their conflict, and now they are sitting together to debate, challenge each other, and reach a unified recommendation.
-
-The conflict situation:
-"${conflict}"
-
-Here is what each advisor said individually:
-${psych}
-${politics}
-${negot}
-${contrary}
-${mentor}
-
-Now simulate the boardroom debate. Each advisor should speak in character — challenging the others where they disagree, building on points where they align. The Contrarian should push back on anyone being too soft. The Political Strategist should challenge the Psychologist if they're being too idealistic. The Mentor should provide the long-term check on everyone else.
-
-After the debate, end with a clear section titled "UNIFIED RECOMMENDATION" — a concrete, prioritised action plan that synthesises the best of all five perspectives. This should be practical and specific, not vague.`
-  ];
-
-  return prompts[index];
+  return template
+    .replace("{{conflict}}", conflict)
+    .replace("{{userNotes}}", userNotes)
+    .replace("{{psych}}", psych)
+    .replace("{{politics}}", politics)
+    .replace("{{negot}}", negot)
+    .replace("{{contrary}}", contrary)
+    .replace("{{mentor}}", mentor)
+    .trim();
 }
 
 // ─── Append a chat bubble ─────────────────────────────────────────────────────
@@ -697,4 +672,4 @@ async function generateVote() {
 }
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-load();
+loadPrompts().then(load);
