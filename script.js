@@ -1,3 +1,6 @@
+// Auth header sent with every function call
+var FUNCTION_SECRET = "201c7db24d8ddc6f2f4a5db63d7ee170ac0fed77750624e6b40f7dd75950d160";
+
 // Stores AI-generated responses for each expert (by index)
 let responses = ["", "", "", "", "", ""];
 
@@ -201,7 +204,7 @@ async function followUp(index, question, chatArea, askBtn) {
   try {
     await fetch("/.netlify/functions/claude-background", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-function-secret": FUNCTION_SECRET },
       body: JSON.stringify({ messages: messages, jobId: jobId, agentIndex: index })
     });
 
@@ -251,7 +254,7 @@ async function generate(index) {
   try {
     await fetch("/.netlify/functions/claude-background", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-function-secret": FUNCTION_SECRET },
       body: JSON.stringify({ prompt: buildPrompt(index), jobId: jobId, agentIndex: index })
     });
 
@@ -290,7 +293,7 @@ function pollForResult(jobId, responseArea) {
       }
 
       try {
-        const res = await fetch("/.netlify/functions/poll?jobId=" + jobId);
+        const res = await fetch("/.netlify/functions/poll?jobId=" + jobId, { headers: { "x-function-secret": FUNCTION_SECRET } });
         const data = await res.json();
 
         if (data.status === "done") {
@@ -639,7 +642,7 @@ async function generateVote() {
     var qJobId = "job-" + Date.now() + "-vq";
     await fetch("/.netlify/functions/claude-background", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-function-secret": FUNCTION_SECRET },
       body: JSON.stringify({ prompt: buildVoteQuestionsPrompt(), jobId: qJobId, agentIndex: 6 })
     });
     var questionsText = await pollForResult(qJobId, statusDiv);
@@ -653,7 +656,7 @@ async function generateVote() {
       var vJobId = "job-" + Date.now() + "-vv" + i;
       await fetch("/.netlify/functions/claude-background", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-function-secret": FUNCTION_SECRET },
         body: JSON.stringify({ prompt: buildVotingPrompt(questions[i]), jobId: vJobId, agentIndex: 6 })
       });
       var votesText = await pollForResult(vJobId, statusDiv);
