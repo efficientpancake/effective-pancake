@@ -1,14 +1,20 @@
 // This function is called every 2 seconds by the app to check if Claude is done.
 const { getStore } = require("@netlify/blobs");
 
+const JOB_ID_PATTERN = /^job-\d+-[a-z0-9]+$/;
+
 exports.handler = async function (event) {
+  // ── Auth check ──────────────────────────────────────────────────────────────
+  const secret = event.headers["x-function-secret"];
+  if (!secret || secret !== process.env.FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
   const jobId = event.queryStringParameters?.jobId;
 
-  if (!jobId) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "No jobId provided" })
-    };
+  if (!jobId || typeof jobId !== "string" || !JOB_ID_PATTERN.test(jobId)) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid jobId" }) };
   }
 
   try {

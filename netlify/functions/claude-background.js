@@ -1,11 +1,41 @@
 // Background function — runs for up to 15 minutes, no timeout issues.
 const { getStore } = require("@netlify/blobs");
 
-exports.handler = async function (event) {
-  const { prompt, messages: msgs, jobId, agentIndex } = JSON.parse(event.body);
-  const messages = msgs || [{ role: "user", content: prompt }];
+const VALID_AGENT_INDICES = [0, 1, 2, 3, 4, 5, 6];
+const JOB_ID_PATTERN = /^job-\d+-[a-z0-9]+$/;
 
-  // Agents 0, 1, 2 use Haiku. Agents 3 (Contrarian), 4 (Mentor), 5 (Boardroom) use Opus.
+exports.handler = async function (event) {
+  // ── Auth check ──────────────────────────────────────────────────────────────
+  const secret = event.headers["x-function-secret"];
+  if (!secret || secret !== process.env.FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
+  // ── Input validation ────────────────────────────────────────────────────────
+  let body;
+  try {
+    body = JSON.parse(event.body);
+  } catch {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid JSON body" }) };
+  }
+
+  const { prompt, messages: msgs, jobId, agentIndex } = body;
+
+  if (!jobId || typeof jobId !== "string" || !JOB_ID_PATTERN.test(jobId)) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid jobId" }) };
+  }
+
+  if (!VALID_AGENT_INDICES.includes(agentIndex)) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Invalid agentIndex" }) };
+  }
+
+  const messages = msgs || (prompt ? [{ role: "user", content: prompt }] : null);
+  if (!messages || !messages.length) {
+    return { statusCode: 400, body: JSON.stringify({ error: "No prompt or messages provided" }) };
+  }
+
+  // ── Model selection ─────────────────────────────────────────────────────────
+  // Agents 0, 1, 2 use Haiku. Agents 3 (Contrarian), 4 (Mentor), 5 (Boardroom), 6 (Vote) use Opus.
   const model = agentIndex <= 2 ? "claude-haiku-4-5-20251001" : "claude-opus-4-6";
 
   const store = getStore({
