@@ -94,6 +94,46 @@ nav {
 
 .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
 
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-item .nav-btn { flex: 1; }
+
+.nav-btn.agent-off { opacity: 0.38; }
+
+.agent-toggle {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  min-width: 28px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.agent-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 16px;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.agent-toggle input:checked + .toggle-slider { background: var(--blue); }
+.agent-toggle input:checked + .toggle-slider::before { transform: translateX(12px); }
+
 .sidebar-footer {
   padding: 16px 20px 0;
   border-top: 1px solid var(--border-sub);

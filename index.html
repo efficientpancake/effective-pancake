@@ -21,26 +21,56 @@
       </div>
 
       <nav>
-        <button class="nav-btn active" onclick="showAgent(0)">
-          <span class="nav-icon">🧠</span>
-          <span>Psychologist</span>
-        </button>
-        <button class="nav-btn" onclick="showAgent(1)">
-          <span class="nav-icon">♟️</span>
-          <span>Political Strategist</span>
-        </button>
-        <button class="nav-btn" onclick="showAgent(2)">
-          <span class="nav-icon">🤝</span>
-          <span>Negotiation Expert</span>
-        </button>
-        <button class="nav-btn" onclick="showAgent(3)">
-          <span class="nav-icon">😈</span>
-          <span>Contrarian</span>
-        </button>
-        <button class="nav-btn" onclick="showAgent(4)">
-          <span class="nav-icon">🧭</span>
-          <span>Mentor</span>
-        </button>
+        <div class="nav-item">
+          <button class="nav-btn active" onclick="showAgent(0)">
+            <span class="nav-icon">🧠</span>
+            <span>Psychologist</span>
+          </button>
+          <label class="agent-toggle" title="Include in Boardroom &amp; Vote">
+            <input type="checkbox" id="toggle-0" checked onchange="toggleAgent(0, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="nav-item">
+          <button class="nav-btn" onclick="showAgent(1)">
+            <span class="nav-icon">♟️</span>
+            <span>Political Strategist</span>
+          </button>
+          <label class="agent-toggle" title="Include in Boardroom &amp; Vote">
+            <input type="checkbox" id="toggle-1" checked onchange="toggleAgent(1, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="nav-item">
+          <button class="nav-btn" onclick="showAgent(2)">
+            <span class="nav-icon">🤝</span>
+            <span>Negotiation Expert</span>
+          </button>
+          <label class="agent-toggle" title="Include in Boardroom &amp; Vote">
+            <input type="checkbox" id="toggle-2" checked onchange="toggleAgent(2, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="nav-item">
+          <button class="nav-btn" onclick="showAgent(3)">
+            <span class="nav-icon">😈</span>
+            <span>Contrarian</span>
+          </button>
+          <label class="agent-toggle" title="Include in Boardroom &amp; Vote">
+            <input type="checkbox" id="toggle-3" checked onchange="toggleAgent(3, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="nav-item">
+          <button class="nav-btn" onclick="showAgent(4)">
+            <span class="nav-icon">🧭</span>
+            <span>Mentor</span>
+          </button>
+          <label class="agent-toggle" title="Include in Boardroom &amp; Vote">
+            <input type="checkbox" id="toggle-4" checked onchange="toggleAgent(4, this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <button class="nav-btn boardroom-btn" onclick="showAgent(5)">
           <span class="nav-icon">🏛️</span>
           <span>The Boardroom</span>

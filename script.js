@@ -4,6 +4,9 @@ var FUNCTION_SECRET = "201c7db24d8ddc6f2f4a5db63d7ee170ac0fed77750624e6b40f7dd75
 // Stores AI-generated responses for each expert (by index)
 let responses = ["", "", "", "", "", ""];
 
+// Which advisors (0-4) are enabled for Boardroom and Vote
+let enabledAgents = [true, true, true, true, true];
+
 // Stores follow-up conversation history per expert
 let chatHistories = [[], [], [], [], [], []];
 
@@ -38,6 +41,18 @@ function renderMarkdown(text) {
     container.appendChild(el);
   });
   return container;
+}
+
+// ─── Toggle agents on/off ─────────────────────────────────────────────────────
+
+function toggleAgent(index, checked) {
+  enabledAgents[index] = checked;
+  document.querySelectorAll(".nav-btn")[index].classList.toggle("agent-off", !checked);
+  saveEnabledAgents();
+}
+
+function saveEnabledAgents() {
+  localStorage.setItem("conflictAdvisorEnabled", JSON.stringify(enabledAgents));
 }
 
 // ─── Show / hide panels ───────────────────────────────────────────────────────
@@ -87,11 +102,11 @@ function buildPrompt(index) {
   });
   const userNotes = notes.length ? "\n\nUser's responses:\n" + notes.join("\n\n") : "";
 
-  const psych    = responses[0] ? "\n\nPsychologist's advice:\n" + responses[0] : "";
-  const politics = responses[1] ? "\n\nPolitical Strategist's advice:\n" + responses[1] : "";
-  const negot    = responses[2] ? "\n\nNegotiation Expert's advice:\n" + responses[2] : "";
-  const contrary = responses[3] ? "\n\nContrarian's advice:\n" + responses[3] : "";
-  const mentor   = responses[4] ? "\n\nMentor's advice:\n" + responses[4] : "";
+  const psych    = enabledAgents[0] && responses[0] ? "\n\nPsychologist's advice:\n" + responses[0] : "";
+  const politics = enabledAgents[1] && responses[1] ? "\n\nPolitical Strategist's advice:\n" + responses[1] : "";
+  const negot    = enabledAgents[2] && responses[2] ? "\n\nNegotiation Expert's advice:\n" + responses[2] : "";
+  const contrary = enabledAgents[3] && responses[3] ? "\n\nContrarian's advice:\n" + responses[3] : "";
+  const mentor   = enabledAgents[4] && responses[4] ? "\n\nMentor's advice:\n" + responses[4] : "";
 
   return template
     .replace("{{conflict}}", conflict)
@@ -234,8 +249,8 @@ async function generate(index) {
     return;
   }
 
-  if (index === 5 && !responses[0] && !responses[1] && !responses[2] && !responses[3] && !responses[4]) {
-    alert("Get advice from at least one expert first before convening the Boardroom.");
+  if (index === 5 && !enabledAgents.some(function(e, i) { return e && responses[i]; })) {
+    alert("Get advice from at least one enabled advisor first before convening the Boardroom.");
     return;
   }
 
@@ -350,6 +365,17 @@ function load() {
     while (chatHistories.length < 6) chatHistories.push([]);
   }
 
+  const savedEnabled = localStorage.getItem("conflictAdvisorEnabled");
+  if (savedEnabled) {
+    enabledAgents = JSON.parse(savedEnabled);
+    while (enabledAgents.length < 5) enabledAgents.push(true);
+    enabledAgents.forEach(function(enabled, i) {
+      var cb = document.getElementById("toggle-" + i);
+      if (cb) cb.checked = enabled;
+      document.querySelectorAll(".nav-btn")[i].classList.toggle("agent-off", !enabled);
+    });
+  }
+
   responses.forEach(function (text, index) {
     if (text) {
       showResponse(index, text);
@@ -364,6 +390,7 @@ function clearAll() {
     localStorage.removeItem("conflictAdvisor");
     localStorage.removeItem("conflictAdvisorResponses");
     localStorage.removeItem("conflictAdvisorChats");
+    localStorage.removeItem("conflictAdvisorEnabled");
     responses = ["", "", "", "", "", ""];
     chatHistories = [[], [], [], [], [], []];
     document.getElementById("conflictDescription").value = "";
@@ -504,11 +531,11 @@ var ADVISOR_META = {
 function buildVoteQuestionsPrompt() {
   var conflict = document.getElementById("conflictDescription").value || "not specified";
   var summaries = [
-    responses[0] ? "Psychologist: " + responses[0].slice(0, 250) : "",
-    responses[1] ? "Political Strategist: " + responses[1].slice(0, 250) : "",
-    responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 250) : "",
-    responses[3] ? "Contrarian: " + responses[3].slice(0, 250) : "",
-    responses[4] ? "Mentor: " + responses[4].slice(0, 250) : "",
+    enabledAgents[0] && responses[0] ? "Psychologist: " + responses[0].slice(0, 250) : "",
+    enabledAgents[1] && responses[1] ? "Political Strategist: " + responses[1].slice(0, 250) : "",
+    enabledAgents[2] && responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 250) : "",
+    enabledAgents[3] && responses[3] ? "Contrarian: " + responses[3].slice(0, 250) : "",
+    enabledAgents[4] && responses[4] ? "Mentor: " + responses[4].slice(0, 250) : "",
     responses[5] ? "Boardroom synthesis: " + responses[5].slice(0, 250) : "",
   ].filter(Boolean).join("\n\n");
 
@@ -517,15 +544,19 @@ function buildVoteQuestionsPrompt() {
 
 function buildVotingPrompt(question) {
   var conflict = document.getElementById("conflictDescription").value || "not specified";
+  var advisorKeys = ["PSYCHOLOGIST", "POLITICAL_STRATEGIST", "NEGOTIATION_EXPERT", "CONTRARIAN", "MENTOR"];
+  var activeKeys = advisorKeys.filter(function(_, i) { return enabledAgents[i]; });
   var ctx = [
-    responses[0] ? "Psychologist: " + responses[0].slice(0, 150) : "",
-    responses[1] ? "Political Strategist: " + responses[1].slice(0, 150) : "",
-    responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 150) : "",
-    responses[3] ? "Contrarian: " + responses[3].slice(0, 150) : "",
-    responses[4] ? "Mentor: " + responses[4].slice(0, 150) : "",
+    enabledAgents[0] && responses[0] ? "Psychologist: " + responses[0].slice(0, 150) : "",
+    enabledAgents[1] && responses[1] ? "Political Strategist: " + responses[1].slice(0, 150) : "",
+    enabledAgents[2] && responses[2] ? "Negotiation Expert: " + responses[2].slice(0, 150) : "",
+    enabledAgents[3] && responses[3] ? "Contrarian: " + responses[3].slice(0, 150) : "",
+    enabledAgents[4] && responses[4] ? "Mentor: " + responses[4].slice(0, 150) : "",
   ].filter(Boolean).join("\n");
+  var formatLines = activeKeys.map(function(k) { return k + "|YES|One sentence reason."; }).join("\n");
+  var count = activeKeys.length;
 
-  return "Simulate a vote among five advisors on this question. Each votes YES or NO and gives exactly one sentence explaining their reasoning — staying in character.\n\nQuestion: \"" + question + "\"\n\nConflict: \"" + conflict + "\"\n\n" + ctx + "\n\nOutput ONLY in this exact format, one line per advisor:\nPSYCHOLOGIST|YES|One sentence reason.\nPOLITICAL_STRATEGIST|YES|One sentence reason.\nNEGOTIATION_EXPERT|NO|One sentence reason.\nCONTRARIAN|NO|One sentence reason.\nMENTOR|YES|One sentence reason.";
+  return "Simulate a vote among " + count + " advisor" + (count !== 1 ? "s" : "") + " on this question. Each votes YES or NO and gives exactly one sentence explaining their reasoning — staying in character.\n\nQuestion: \"" + question + "\"\n\nConflict: \"" + conflict + "\"\n\n" + ctx + "\n\nOutput ONLY in this exact format, one line per advisor:\n" + formatLines;
 }
 
 function parseVoteQuestions(text) {
@@ -624,8 +655,8 @@ async function generateVote() {
   var conflict = document.getElementById("conflictDescription").value.trim();
   if (!conflict) { alert("Please describe your conflict situation first."); return; }
 
-  var hasResponse = responses.some(function(r) { return r; });
-  if (!hasResponse) { alert("Get advice from at least one advisor before convening the vote."); return; }
+  var hasResponse = responses.some(function(r, i) { return i < 5 && enabledAgents[i] && r; });
+  if (!hasResponse) { alert("Get advice from at least one enabled advisor before convening the vote."); return; }
 
   var btn = document.querySelector("#agent-6 .generate-btn");
   var statusDiv = document.getElementById("vote-status");
