@@ -35,8 +35,8 @@ exports.handler = async function (event) {
   }
 
   // ── Model selection ─────────────────────────────────────────────────────────
-  // Agents 0, 1, 2 use Haiku. Agents 3 (Contrarian), 4 (Mentor), 5 (Boardroom), 6 (Vote) use Opus.
-  const model = agentIndex <= 2 ? "claude-haiku-4-5-20251001" : "claude-opus-4-6";
+  // Agents 0-2 use Sonnet. Agents 3 (Contrarian), 4 (Mentor), 5 (Boardroom) use Opus. Agent 6 (Vote) uses Sonnet.
+  const model = (agentIndex <= 2 || agentIndex === 6) ? "claude-sonnet-4-6" : "claude-opus-4-6";
 
   const store = getStore({
     name: "jobs",
